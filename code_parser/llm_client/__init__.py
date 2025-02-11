@@ -6,6 +6,21 @@ import redis.asyncio as redis
 
 class LlmClient:
     MODEL_NAME = "codestral-2405"
+    REQUEST_DELAY_SECONDS = 0.5 # to prevent 429 Too Many Requests
+    DOCUMENTATION_PROMPT = """
+Write a comprehensive documentation for the following Python function, following the guidelines of PEP 257:
+
+{function_code}
+
+The documentation should include:
+- A brief one-line summary of the function's purpose
+- A detailed description of what the function does
+- Descriptions of the function's parameters and their types
+- Descriptions of the function's return value and its type
+- Any relevant examples or usage notes
+
+Documentation:
+"""
 
     client: Mistral
     redis_client: redis.Redis
@@ -25,22 +40,8 @@ class LlmClient:
         if summary is not None:
             return summary
 
-        prompt = f"""
-Write a comprehensive documentation for the following Python function, following the guidelines of PEP 257:
-
-{function_code}
-
-The documentation should include:
-- A brief one-line summary of the function's purpose
-- A detailed description of what the function does
-- Descriptions of the function's parameters and their types
-- Descriptions of the function's return value and its type
-- Any relevant examples or usage notes
-
-Documentation:
-"""
-
-        sleep(0.25) # to prevent 429
+        prompt = self.DOCUMENTATION_PROMPT.format(function_code=function_code)
+        sleep(self.REQUEST_DELAY_SECONDS)
 
         response = self.client.fim.complete(
             model=self.MODEL_NAME,
